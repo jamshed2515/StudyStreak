@@ -1,4 +1,4 @@
-# Naaz Tracker - Study Challenge Tracker
+# StudyStreak - Study Challenge Tracker
 
 A MERN stack application for students to track their study challenges and daily tasks. Perfect for JEE/BTech students preparing for exams.
 
@@ -48,7 +48,7 @@ npm install
 ```bash
 # In server/.env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/naaz-tracker
+MONGODB_URI=mongodb://localhost:27017/study-streak
 JWT_SECRET=your-secret-key
 ```
 
@@ -71,7 +71,7 @@ Navigate to `http://localhost:3000`
 ## Project Structure
 
 ```
-naaz-tracker/
+study-streak/
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
@@ -113,15 +113,15 @@ naaz-tracker/
 All app data is stored in **MongoDB**.
 
 - **Connection**: Set in `server/.env` as `MONGODB_URI`.
-  - Local: `mongodb://localhost:27017/naaz-tracker`
+  - Local: `mongodb://localhost:27017/study-streak`
   - Cloud: use a MongoDB Atlas connection string.
-- **Database name**: `naaz-tracker` (or the database name in your URI).
+- **Database name**: `study-streak` (or the database name in your URI).
 - **Collections**:
   - **users** – name, email (hashed password), examType, examDate, etc.
   - **challenges** – title, startDate, endDate, targetDays, completedDays, streaks, etc.
   - **tasks** – title, category, subtopic, priority, date, isCompleted, estimatedMinutes, etc.
 
-To view data locally: use **MongoDB Compass** or run `mongosh`, connect to the same URI, then use database `naaz-tracker`.
+To view data locally: use **MongoDB Compass** or run `mongosh`, connect to the same URI, then use database `study-streak`.
 
 ## Deployment
 

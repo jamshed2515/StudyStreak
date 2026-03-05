@@ -1,7 +1,7 @@
 {
-  "name": "naaz-tracker-server",
+  "name": "study-streak-server",
   "version": "1.0.0",
-  "description": "Backend for Naaz Tracker - Student Challenge Tracker",
+  "description": "Backend for StudyStreak - Student Challenge Tracker",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

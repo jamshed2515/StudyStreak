@@ -21,7 +21,7 @@ app.use('/api/tasks', require('./routes/tasks'));
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ message: 'Naaz Tracker API is running!' });
+  res.json({ message: 'StudyStreak API is running!' });
 });
 
 const PORT = process.env.PORT || 5000;
