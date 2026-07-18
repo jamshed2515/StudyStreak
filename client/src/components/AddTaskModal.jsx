@@ -10,6 +10,7 @@ const AddTaskModal = ({ onClose, onAdd, onAddMainTopic, defaultCategory = '', de
     estimatedMinutes: 60
   });
   const [loading, setLoading] = useState(false);
+  const [customCategory, setCustomCategory] = useState('');
 
   const categories = ['Physics', 'Chemistry', 'Mathematics', 'DSA', 'Coding', 'English', 'Other'];
   const priorities = ['Low', 'Medium', 'High'];
@@ -22,21 +23,26 @@ const AddTaskModal = ({ onClose, onAdd, onAddMainTopic, defaultCategory = '', de
     e.preventDefault();
     setLoading(true);
 
+    const finalCategory = (formData.category === 'Other' && customCategory.trim())
+      ? customCategory.trim()
+      : formData.category;
+
     // Main topic: only add subject to challenge (no task created)
     if (isMainTopicCreation && onAddMainTopic) {
-      await onAddMainTopic({ category: formData.category });
+      await onAddMainTopic({ category: finalCategory });
       setLoading(false);
       return;
     }
 
     const payload = {
       ...formData,
+      category: finalCategory,
       date: new Date()
     };
 
     // Main topic (fallback): use subject name as title, default 60 min
     if (isMainTopicCreation) {
-      payload.title = formData.category;
+      payload.title = finalCategory;
       payload.estimatedMinutes = 60;
     }
 
@@ -45,7 +51,9 @@ const AddTaskModal = ({ onClose, onAdd, onAddMainTopic, defaultCategory = '', de
   };
 
   const isAddingToSubtopic = !!defaultSubtopic;
-  const canSubmit = isAddingToSubtopic ? formData.title : formData.category;
+  const canSubmit = isAddingToSubtopic
+    ? formData.title
+    : (formData.category === 'Other' ? customCategory.trim() : formData.category);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -92,8 +100,8 @@ const AddTaskModal = ({ onClose, onAdd, onAddMainTopic, defaultCategory = '', de
 
           {/* Subject - only for main topic creation */}
           {isMainTopicCreation && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">
                 Subject
               </label>
               <div className="grid grid-cols-4 gap-2">
@@ -101,7 +109,12 @@ const AddTaskModal = ({ onClose, onAdd, onAddMainTopic, defaultCategory = '', de
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setFormData({ ...formData, category: cat })}
+                    onClick={() => {
+                      setFormData({ ...formData, category: cat });
+                      if (cat !== 'Other') {
+                        setCustomCategory('');
+                      }
+                    }}
                     className={`p-2 rounded-lg text-xs font-medium transition-colors ${
                       formData.category === cat
                         ? 'bg-primary-500 text-white'
@@ -112,6 +125,23 @@ const AddTaskModal = ({ onClose, onAdd, onAddMainTopic, defaultCategory = '', de
                   </button>
                 ))}
               </div>
+
+              {formData.category === 'Other' && (
+                <div className="animate-fadeIn">
+                  <label className="block text-xs font-medium text-slate-400 mb-2">
+                    Enter Custom Subject Name
+                  </label>
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="input-field"
+                    placeholder="e.g., Biology, History, Economics"
+                    required
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
           )}
 

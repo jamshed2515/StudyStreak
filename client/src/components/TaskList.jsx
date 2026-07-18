@@ -64,9 +64,13 @@ const TaskList = ({ tasks, categories = [], onToggle, onDelete, onAddTask, onUpd
 
   const categoryNamesFromTasks = Object.keys(groupedData);
   const allCategoryNames = [...new Set([...(categories || []), ...categoryNamesFromTasks])];
-  const sortedCategories = allCategoryNames.sort((a, b) => 
-    categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
-  );
+  const sortedCategories = allCategoryNames.sort((a, b) => {
+    let indexA = categoryOrder.indexOf(a);
+    let indexB = categoryOrder.indexOf(b);
+    if (indexA === -1) indexA = 999;
+    if (indexB === -1) indexB = 999;
+    return indexA - indexB;
+  });
 
   const toggleCategory = (category) => {
     setExpandedCategories(prev => ({

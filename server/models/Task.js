@@ -18,7 +18,6 @@ const taskSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Physics', 'Chemistry', 'Mathematics', 'DSA', 'Coding', 'English', 'Other'],
     default: 'Other'
   },
   subtopic: {
