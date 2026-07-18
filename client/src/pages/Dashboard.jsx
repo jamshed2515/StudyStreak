@@ -8,6 +8,7 @@ import {
   FiTrendingUp, FiClock, FiZap, FiAward, FiChevronDown, FiList, FiFilter
 } from 'react-icons/fi';
 import AddSubtopicModal from '../components/AddSubtopicModal';
+import EditSubtopicModal from '../components/EditSubtopicModal';
 import SubtopicDetails from '../components/SubtopicDetails';
 import MainTopicList from '../components/MainTopicList';
 import ChallengeCard from '../components/ChallengeCard';
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [selectedSubtopic, setSelectedSubtopic] = useState(null);
   const [showAddSubtopic, setShowAddSubtopic] = useState({ open: false, category: '' });
+  const [showEditSubtopic, setShowEditSubtopic] = useState({ open: false, subtopic: null });
 
   // Fetch data
   useEffect(() => {
@@ -163,6 +165,30 @@ const Dashboard = () => {
         if (found) setSelectedSubtopic(found);
       }
       toast.error('Failed to delete subtopic');
+    }
+  };
+
+  const handleEditSubtopic = async (subtopicId, name, description) => {
+    try {
+      const response = await api.put(
+        `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}`,
+        { name, description }
+      );
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
+      
+      // Update selectedSubtopic if active
+      if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+        const updatedSub = response.data.subtopics.find(s => s._id === subtopicId);
+        if (updatedSub) {
+          setSelectedSubtopic(updatedSub);
+        }
+      }
+      toast.success('Subtopic updated!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update subtopic');
     }
   };
 
@@ -684,6 +710,7 @@ const Dashboard = () => {
                 onEditMilestone={handleEditMilestone}
                 onCompleteSubtopic={handleCompleteSubtopic}
                 onResetMilestones={handleResetMilestones}
+                onEditSubtopic={(sub) => setShowEditSubtopic({ open: true, subtopic: sub })}
               />
             ) : (
               <div className="space-y-6">
@@ -704,6 +731,7 @@ const Dashboard = () => {
                   onOpenAddSubtopicModal={(category) => setShowAddSubtopic({ open: true, category })}
                   onDeleteSubtopic={handleDeleteSubtopic}
                   onDeleteCategory={handleDeleteCategory}
+                  onEditSubtopic={(sub) => setShowEditSubtopic({ open: true, subtopic: sub })}
                 />
               </div>
             )
@@ -743,6 +771,14 @@ const Dashboard = () => {
           category={showAddSubtopic.category}
           onClose={() => setShowAddSubtopic({ open: false, category: '' })}
           onAdd={handleCreateSubtopic}
+        />
+      )}
+
+      {showEditSubtopic.open && showEditSubtopic.subtopic && (
+        <EditSubtopicModal
+          subtopic={showEditSubtopic.subtopic}
+          onClose={() => setShowEditSubtopic({ open: false, subtopic: null })}
+          onSave={handleEditSubtopic}
         />
       )}
     </div>

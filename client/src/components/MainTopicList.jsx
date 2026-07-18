@@ -1,4 +1,4 @@
-import { FiPlus, FiTrash2, FiFolder, FiCheck, FiBookOpen } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiFolder, FiCheck, FiBookOpen, FiEdit2 } from 'react-icons/fi';
 
 const categoryColors = {
   Physics: { bg: 'bg-blue-500', light: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
@@ -19,7 +19,8 @@ const MainTopicList = ({
   onSelectSubtopic,
   onOpenAddSubtopicModal,
   onDeleteSubtopic,
-  onDeleteCategory
+  onDeleteCategory,
+  onEditSubtopic
 }) => {
   // Sort categories
   const sortedCategories = [...categories].sort((a, b) => {
@@ -104,7 +105,7 @@ const MainTopicList = ({
                           )}
                           <div className="min-w-0">
                             <span className={`text-sm font-medium group-hover:text-white transition-colors block truncate ${
-                              subtopic.isCompleted ? 'text-green-300 line-through' : 'text-slate-200'
+                              subtopic.isCompleted ? 'text-green-300' : 'text-slate-200'
                             }`}>
                               {subtopic.name}
                             </span>
@@ -135,6 +136,15 @@ const MainTopicList = ({
                               </span>
                             )}
                           </div>
+
+                          {/* Edit Subtopic Icon */}
+                          <button
+                            onClick={() => onEditSubtopic(subtopic)}
+                            className="p-1 text-slate-500 hover:text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Edit subtopic"
+                          >
+                            <FiEdit2 className="w-3.5 h-3.5" />
+                          </button>
 
                           {/* Delete Subtopic Icon */}
                           <button

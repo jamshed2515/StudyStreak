@@ -9,7 +9,8 @@ const SubtopicDetails = ({
   onDeleteMilestone,
   onEditMilestone,
   onCompleteSubtopic,
-  onResetMilestones
+  onResetMilestones,
+  onEditSubtopic
 }) => {
   const [newMilestoneText, setNewMilestoneText] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -78,7 +79,16 @@ const SubtopicDetails = ({
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-white mt-2">{subtopic.name}</h1>
+            <div className="flex items-center gap-3 mt-2">
+              <h1 className="text-3xl font-bold text-white">{subtopic.name}</h1>
+              <button
+                onClick={() => onEditSubtopic(subtopic)}
+                className="p-1 text-slate-400 hover:text-white rounded transition-colors"
+                title="Edit Subtopic Name/Description"
+              >
+                <FiEdit2 className="w-5 h-5" />
+              </button>
+            </div>
             {subtopic.description ? (
               <p className="text-slate-400 text-sm max-w-xl leading-relaxed">{subtopic.description}</p>
             ) : (
@@ -217,9 +227,7 @@ const SubtopicDetails = ({
                         />
                       ) : (
                         <span
-                          className={`text-sm ${
-                            milestone.isCompleted ? 'line-through text-slate-500 font-normal' : 'text-slate-200 font-medium'
-                          }`}
+                          className="text-sm text-slate-200 font-medium"
                         >
                           {milestone.text}
                         </span>
