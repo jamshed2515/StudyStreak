@@ -19,8 +19,6 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
-  const [todaysTasks, setTodaysTasks] = useState([]);
-  const [allTasks, setAllTasks] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCreateChallenge, setShowCreateChallenge] = useState(false);
@@ -35,10 +33,9 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Fetch tasks when selected challenge changes
+  // Fetch stats when selected challenge changes
   useEffect(() => {
     if (selectedChallenge) {
-      fetchTasks();
       fetchStats();
     }
   }, [selectedChallenge?._id]);
@@ -85,28 +82,7 @@ const Dashboard = () => {
     }
   };
 
-  const fetchTasks = async () => {
-    try {
-      const tasksRes = await api.get(`/tasks?challengeId=${selectedChallenge._id}`);
-      
-      // Store all tasks
-      setAllTasks(tasksRes.data);
-      
-      // Filter for today's tasks
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-      
-      const todayTasks = tasksRes.data.filter(task => {
-        const taskDate = new Date(task.date);
-        return taskDate >= today && taskDate <= todayEnd;
-      });
-      setTodaysTasks(todayTasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    }
-  };
+  // fetchTasks removed since progress is driven by challenge subtopics/milestones
 
   const fetchStats = async () => {
     try {
@@ -171,7 +147,6 @@ const Dashboard = () => {
       if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
         setSelectedSubtopic(null);
       }
-      fetchTasks();
     } catch (error) {
       toast.error('Failed to delete subtopic');
     }
@@ -189,29 +164,12 @@ const Dashboard = () => {
     }
   };
 
-  const handleAddTask = async (taskData) => {
-    try {
-      await api.post('/tasks', {
-        ...taskData,
-        challengeId: selectedChallenge._id
-      });
-      setShowAddTask(false);
-      toast.success('Task added!');
-      fetchTasks();
-      fetchStats();
-      refreshSelectedChallenge();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add task');
-    }
-  };
-
   const handleAddMainTopic = async ({ category }) => {
     try {
       await api.post(`/challenges/${selectedChallenge._id}/categories`, { category });
       setShowAddTask(false);
-      toast.success('Subject added! Add tasks with the + button.');
+      toast.success('Subject added! Add subtopics and track progress.');
       refreshSelectedChallenge();
-      fetchTasks();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to add subject');
     }
@@ -220,44 +178,97 @@ const Dashboard = () => {
   const handleDeleteCategory = async (category) => {
     try {
       await api.delete(`/challenges/${selectedChallenge._id}/categories`, { data: { category } });
-      toast.success('Subject and its tasks removed');
+      toast.success('Subject and its subtopics removed');
       refreshSelectedChallenge();
-      fetchTasks();
     } catch (error) {
       toast.error('Failed to delete subject');
     }
   };
 
-  const handleToggleTask = async (taskId) => {
+  const handleAddMilestone = async (subtopicId, text) => {
     try {
-      await api.put(`/tasks/${taskId}/toggle`);
-      fetchTasks();
+      const response = await api.post(`/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones`, { text });
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
       fetchStats();
-      refreshSelectedChallenge();
     } catch (error) {
-      toast.error('Failed to update task');
+      toast.error('Failed to add milestone');
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
+  const handleToggleMilestone = async (subtopicId, milestoneId, isCompleted) => {
     try {
-      await api.delete(`/tasks/${taskId}`);
-      fetchTasks();
+      const response = await api.put(
+        `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones/${milestoneId}`,
+        { isCompleted }
+      );
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
       fetchStats();
-      refreshSelectedChallenge();
     } catch (error) {
-      toast.error('Failed to delete task');
+      toast.error('Failed to update milestone');
     }
   };
 
-  const handleUpdateTask = async (taskId, updates) => {
+  const handleEditMilestone = async (subtopicId, milestoneId, text) => {
     try {
-      await api.put(`/tasks/${taskId}`, updates);
-      fetchTasks();
-      fetchStats();
-      refreshSelectedChallenge();
+      const response = await api.put(
+        `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones/${milestoneId}`,
+        { text }
+      );
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
     } catch (error) {
-      toast.error('Failed to update task');
+      toast.error('Failed to edit milestone');
+    }
+  };
+
+  const handleDeleteMilestone = async (subtopicId, milestoneId) => {
+    try {
+      const response = await api.delete(
+        `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones/${milestoneId}`
+      );
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
+      fetchStats();
+    } catch (error) {
+      toast.error('Failed to delete milestone');
+    }
+  };
+
+  const handleCompleteSubtopic = async (subtopicId, isCompleted) => {
+    try {
+      const response = await api.put(
+        `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/complete`,
+        { isCompleted }
+      );
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
+      fetchStats();
+      toast.success(isCompleted ? 'Topic marked complete!' : 'Topic marked incomplete');
+
+      // Auto-redirect to the next incomplete subtopic
+      if (isCompleted) {
+        const nextIncomplete = response.data.subtopics.find(s => !s.isCompleted);
+        if (nextIncomplete) {
+          setSelectedSubtopic(nextIncomplete);
+        } else {
+          setSelectedSubtopic(null); // Return to dashboard if all completed
+          toast.success('Congratulations! You completed all topics in this challenge! 🎉');
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to update topic status');
     }
   };
 
@@ -280,8 +291,6 @@ const Dashboard = () => {
         setSelectedChallenge(updatedChallenges[0]);
       } else {
         setSelectedChallenge(null);
-        setTodaysTasks([]);
-        setAllTasks([]);
         setStats(null);
       }
     } catch (error) {
@@ -302,9 +311,7 @@ const Dashboard = () => {
     }
   };
 
-  const completedToday = todaysTasks.filter(t => t.isCompleted).length;
-  const totalToday = todaysTasks.length;
-  const completionPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
+  // (completedToday calculations removed)
 
   if (loading) {
     return (
@@ -480,11 +487,12 @@ const Dashboard = () => {
             selectedSubtopic ? (
               <SubtopicDetails
                 subtopic={selectedSubtopic}
-                tasks={allTasks}
                 onBack={() => setSelectedSubtopic(null)}
-                onAddTask={handleAddTask}
-                onToggleTask={handleToggleTask}
-                onDeleteTask={handleDeleteTask}
+                onAddMilestone={handleAddMilestone}
+                onToggleMilestone={handleToggleMilestone}
+                onDeleteMilestone={handleDeleteMilestone}
+                onEditMilestone={handleEditMilestone}
+                onCompleteSubtopic={handleCompleteSubtopic}
               />
             ) : (
               <div className="space-y-6">
@@ -501,7 +509,6 @@ const Dashboard = () => {
                 <MainTopicList
                   categories={selectedChallenge?.categories || []}
                   subtopics={selectedChallenge?.subtopics || []}
-                  tasks={allTasks}
                   onSelectSubtopic={(sub) => setSelectedSubtopic(sub)}
                   onOpenAddSubtopicModal={(category) => setShowAddSubtopic({ open: true, category })}
                   onDeleteSubtopic={handleDeleteSubtopic}

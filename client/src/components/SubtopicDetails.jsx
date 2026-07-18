@@ -1,35 +1,53 @@
 import { useState } from 'react';
-import { FiArrowLeft, FiCheck, FiTrash2, FiPlus, FiClock } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiTrash2, FiPlus, FiEdit2, FiX } from 'react-icons/fi';
 
-const SubtopicDetails = ({ subtopic, tasks, onBack, onAddTask, onToggleTask, onDeleteTask }) => {
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [priority, setPriority] = useState('Medium');
-  const [estimatedMinutes, setEstimatedMinutes] = useState(60);
+const SubtopicDetails = ({
+  subtopic,
+  onBack,
+  onAddMilestone,
+  onToggleMilestone,
+  onDeleteMilestone,
+  onEditMilestone,
+  onCompleteSubtopic
+}) => {
+  const [newMilestoneText, setNewMilestoneText] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Filter tasks for this subtopic and category
-  const subtopicTasks = tasks.filter(
-    (t) => t.category === subtopic.category && t.subtopic === subtopic.name
-  );
+  const milestones = subtopic.milestones || [];
+  const completedCount = milestones.filter(m => m.isCompleted).length;
+  const totalCount = milestones.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const completedTasks = subtopicTasks.filter((t) => t.isCompleted).length;
-  const totalTasks = subtopicTasks.length;
-  const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const isAllMilestonesCompleted = totalCount > 0 && completedCount === totalCount;
 
-  const handleSubmit = async (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newMilestoneText.trim()) return;
 
-    await onAddTask({
-      title: newTaskTitle.trim(),
-      category: subtopic.category,
-      subtopic: subtopic.name,
-      priority,
-      estimatedMinutes
-    });
-
-    setNewTaskTitle('');
+    await onAddMilestone(subtopic._id, newMilestoneText.trim());
+    setNewMilestoneText('');
     setShowAddForm(false);
+  };
+
+  const handleStartEdit = (milestone) => {
+    setEditingId(milestone._id);
+    setEditingText(milestone.text);
+  };
+
+  const handleSaveEdit = async (milestoneId) => {
+    if (!editingText.trim()) return;
+    await onEditMilestone(subtopic._id, milestoneId, editingText.trim());
+    setEditingId(null);
+  };
+
+  const handleKeyPress = (e, milestoneId) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit(milestoneId);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+    }
   };
 
   return (
@@ -49,9 +67,16 @@ const SubtopicDetails = ({ subtopic, tasks, onBack, onAddTask, onToggleTask, onD
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-slate-700/50 pb-6 mb-6">
           <div className="space-y-2">
-            <span className="px-2.5 py-1 bg-primary-600/10 text-primary-400 text-xs font-semibold rounded-full uppercase tracking-wider">
-              {subtopic.category}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-1 bg-primary-600/10 text-primary-400 text-xs font-semibold rounded-full uppercase tracking-wider">
+                {subtopic.category}
+              </span>
+              {subtopic.isCompleted && (
+                <span className="px-2.5 py-1 bg-green-500/10 text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                  <FiCheck className="w-3 h-3" /> Completed
+                </span>
+              )}
+            </div>
             <h1 className="text-3xl font-bold text-white mt-2">{subtopic.name}</h1>
             {subtopic.description ? (
               <p className="text-slate-400 text-sm max-w-xl leading-relaxed">{subtopic.description}</p>
@@ -63,7 +88,7 @@ const SubtopicDetails = ({ subtopic, tasks, onBack, onAddTask, onToggleTask, onD
           {/* Progress Card */}
           <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-4 min-w-[240px]">
             <div className="flex justify-between items-center text-sm mb-2">
-              <span className="text-slate-400 font-medium">Subtopic Progress</span>
+              <span className="text-slate-400 font-medium">Roadmap Progress</span>
               <span className="text-primary-400 font-bold">{progressPercent}%</span>
             </div>
             <div className="h-2 bg-slate-700 rounded-full overflow-hidden mb-2">
@@ -73,162 +98,175 @@ const SubtopicDetails = ({ subtopic, tasks, onBack, onAddTask, onToggleTask, onD
               ></div>
             </div>
             <span className="text-xs text-slate-500">
-              {completedTasks} of {totalTasks} tasks completed
+              {completedCount} of {totalCount} milestones completed
             </span>
           </div>
         </div>
 
-        {/* Tasks Section */}
+        {/* Milestones Checklist Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-white">Task Checklist</h2>
+            <h2 className="text-lg font-semibold text-white">Learning Milestones</h2>
             {!showAddForm && (
               <button
                 onClick={() => setShowAddForm(true)}
                 className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1"
               >
-                <FiPlus className="w-4 h-4" /> Add Task
+                <FiPlus className="w-4 h-4" /> Add Milestone
               </button>
             )}
           </div>
 
-          {/* Quick Task Add Form */}
+          {/* Quick Milestone Add Form */}
           {showAddForm && (
-            <form onSubmit={handleSubmit} className="p-4 bg-slate-900/40 border border-slate-700/60 rounded-xl space-y-3">
+            <form onSubmit={handleAddSubmit} className="p-4 bg-slate-900/40 border border-slate-700/60 rounded-xl flex gap-3 items-center">
               <input
                 type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Enter task description (e.g., Learn Basic Operations, Solve 10 questions)..."
-                className="input-field w-full"
+                value={newMilestoneText}
+                onChange={(e) => setNewMilestoneText(e.target.value)}
+                placeholder="Enter milestone description (e.g., Two Pointers practice)..."
+                className="input-field flex-1"
                 required
                 autoFocus
               />
-              <div className="flex justify-between items-center gap-4 flex-wrap">
-                <div className="flex gap-4 items-center">
-                  <div>
-                    <span className="block text-xs text-slate-500 mb-1">Priority</span>
-                    <div className="flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-                      {['Low', 'Medium', 'High'].map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => setPriority(p)}
-                          className={`px-2.5 py-1 rounded text-[10px] font-semibold transition-colors ${
-                            priority === p ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-slate-300'
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="block text-xs text-slate-500 mb-1">Estimated Time</span>
-                    <select
-                      value={estimatedMinutes}
-                      onChange={(e) => setEstimatedMinutes(parseInt(e.target.value))}
-                      className="bg-slate-800 border border-slate-700 rounded-lg text-xs px-2 py-1 text-slate-300 focus:outline-none focus:border-primary-500"
-                    >
-                      {[15, 30, 45, 60, 90, 120, 180].map((t) => (
-                        <option key={t} value={t}>{t} mins</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddForm(false)}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                  >
-                    Create Task
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-3 py-2 text-xs text-slate-400 hover:text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-3 py-2 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+              >
+                Add
+              </button>
             </form>
           )}
 
           {/* Checklist Items */}
-          {subtopicTasks.length === 0 ? (
+          {milestones.length === 0 ? (
             <div className="text-center py-12 bg-slate-900/20 rounded-2xl border border-dashed border-slate-700/50">
-              <p className="text-slate-500 text-sm">No tasks created yet for this subtopic.</p>
+              <p className="text-slate-500 text-sm">No milestones created yet. Add standard learning steps!</p>
               <button
                 onClick={() => setShowAddForm(true)}
                 className="text-primary-400 hover:text-primary-300 text-sm font-medium mt-3 inline-flex items-center gap-1"
               >
-                <FiPlus className="w-4 h-4" /> Add your first task
+                <FiPlus className="w-4 h-4" /> Add milestone
               </button>
             </div>
           ) : (
             <div className="space-y-2">
-              {subtopicTasks.map((task) => (
-                <div
-                  key={task._id}
-                  className={`flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/20 hover:bg-slate-900/40 transition-all border border-slate-700/30 ${
-                    task.isCompleted ? 'bg-slate-900/10 border-slate-700/10' : ''
-                  }`}
-                >
-                  <button
-                    onClick={() => onToggleTask(task._id)}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                      task.isCompleted
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-slate-600 hover:border-primary-500'
+              {milestones.map((milestone) => {
+                const isEditing = editingId === milestone._id;
+
+                return (
+                  <div
+                    key={milestone._id}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/20 hover:bg-slate-900/40 transition-all border border-slate-700/30 group ${
+                      milestone.isCompleted ? 'bg-slate-900/10 border-slate-700/10' : ''
                     }`}
                   >
-                    {task.isCompleted && <FiCheck className="w-3 h-3 text-white" />}
-                  </button>
-
-                  <div className="flex-1 min-w-0">
-                    <span
-                      className={`text-sm ${
-                        task.isCompleted ? 'line-through text-slate-500 font-normal' : 'text-slate-200 font-medium'
-                      }`}
-                    >
-                      {task.title}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {/* Priority Badge */}
-                    <span
-                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                        task.priority === 'High'
-                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                          : task.priority === 'Medium'
-                            ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                            : 'bg-green-500/10 text-green-400 border border-green-500/20'
-                      }`}
-                    >
-                      {task.priority}
-                    </span>
-
-                    {/* Time Badge */}
-                    <span className="text-slate-500 text-xs flex items-center gap-1">
-                      <FiClock className="w-3 h-3" /> {task.estimatedMinutes}m
-                    </span>
-
-                    {/* Delete Task */}
+                    {/* Toggle Checkbox */}
                     <button
-                      onClick={() => onDeleteTask(task._id)}
-                      className="p-1 text-slate-500 hover:text-red-400 rounded transition-colors"
-                      title="Delete task"
+                      onClick={() => onToggleMilestone(subtopic._id, milestone._id, !milestone.isCompleted)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                        milestone.isCompleted
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-slate-600 hover:border-primary-500'
+                      }`}
                     >
-                      <FiTrash2 className="w-4 h-4" />
+                      {milestone.isCompleted && <FiCheck className="w-3 h-3 text-white" />}
                     </button>
+
+                    {/* Milestone Text (Input or Span) */}
+                    <div className="flex-1 min-w-0">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingText}
+                          onChange={(e) => setEditingText(e.target.value)}
+                          onKeyDown={(e) => handleKeyPress(e, milestone._id)}
+                          onBlur={() => handleSaveEdit(milestone._id)}
+                          className="bg-slate-800 text-slate-200 text-sm font-medium px-2 py-1 rounded w-full border border-primary-500 focus:outline-none"
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className={`text-sm ${
+                            milestone.isCompleted ? 'line-through text-slate-500 font-normal' : 'text-slate-200 font-medium'
+                          }`}
+                        >
+                          {milestone.text}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Inline Actions */}
+                    <div className="flex items-center gap-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!isEditing ? (
+                        <>
+                          <button
+                            onClick={() => handleStartEdit(milestone)}
+                            className="p-1 text-slate-500 hover:text-white rounded transition-colors"
+                            title="Edit milestone"
+                          >
+                            <FiEdit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteMilestone(subtopic._id, milestone._id)}
+                            className="p-1 text-slate-500 hover:text-red-400 rounded transition-colors"
+                            title="Delete milestone"
+                          >
+                            <FiTrash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleSaveEdit(milestone._id)}
+                            className="p-1 text-green-400 hover:text-green-300 rounded transition-colors font-medium text-xs"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="p-1 text-slate-500 hover:text-white rounded transition-colors"
+                          >
+                            <FiX className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+          )}
+        </div>
+
+        {/* Mark Topic Complete Section */}
+        <div className="mt-8 pt-6 border-t border-slate-700/50 flex justify-end">
+          {subtopic.isCompleted ? (
+            <button
+              onClick={() => onCompleteSubtopic(subtopic._id, false)}
+              className="px-6 py-3 bg-red-600/20 text-red-400 hover:bg-red-600/30 hover:text-red-300 rounded-xl transition-all font-semibold flex items-center gap-2 border border-red-500/20"
+            >
+              Mark Incomplete
+            </button>
+          ) : (
+            <button
+              onClick={() => onCompleteSubtopic(subtopic._id, true)}
+              disabled={!isAllMilestonesCompleted}
+              className={`px-6 py-3 rounded-xl transition-all font-semibold flex items-center gap-2 ${
+                isAllMilestonesCompleted
+                  ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'
+                  : 'bg-slate-700 text-slate-400 cursor-not-allowed border border-slate-650'
+              }`}
+            >
+              <FiCheck className="w-4 h-4" /> Mark Topic Complete
+            </button>
           )}
         </div>
       </div>

@@ -30,10 +30,10 @@ const MainTopicList = ({
     return indexA - indexB;
   });
 
-  const getSubtopicProgress = (subtopicName, category) => {
-    const subtopicTasks = tasks.filter(t => t.category === category && t.subtopic === subtopicName);
-    const completed = subtopicTasks.filter(t => t.isCompleted).length;
-    const total = subtopicTasks.length;
+  const getSubtopicProgress = (subtopic) => {
+    const milestones = subtopic.milestones || [];
+    const completed = milestones.filter(m => m.isCompleted).length;
+    const total = milestones.length;
     return {
       percent: total > 0 ? Math.round((completed / total) * 100) : 0,
       completed,
@@ -87,17 +87,25 @@ const MainTopicList = ({
               ) : (
                 <div className="space-y-2 mb-4">
                   {categorySubtopics.map((subtopic) => {
-                    const progress = getSubtopicProgress(subtopic.name, category);
+                    const progress = getSubtopicProgress(subtopic);
                     return (
                       <div
                         key={subtopic._id}
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-900/30 border border-slate-700/30 hover:border-slate-650 hover:bg-slate-900/50 transition-all cursor-pointer group"
+                        className={`flex items-center justify-between p-3 rounded-xl bg-slate-900/30 border border-slate-700/30 hover:border-slate-650 hover:bg-slate-900/50 transition-all cursor-pointer group ${
+                          subtopic.isCompleted ? 'bg-green-950/10 border-green-500/20 hover:bg-green-950/20' : ''
+                        }`}
                         onClick={() => onSelectSubtopic(subtopic)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <FiFolder className={`w-4 h-4 ${colors.text} flex-shrink-0`} />
+                          {subtopic.isCompleted ? (
+                            <FiCheck className="w-4 h-4 text-green-400 flex-shrink-0 bg-green-500/10 border border-green-500/30 rounded-full p-0.5" />
+                          ) : (
+                            <FiFolder className={`w-4 h-4 ${colors.text} flex-shrink-0`} />
+                          )}
                           <div className="min-w-0">
-                            <span className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors block truncate">
+                            <span className={`text-sm font-medium group-hover:text-white transition-colors block truncate ${
+                              subtopic.isCompleted ? 'text-green-300 line-through' : 'text-slate-200'
+                            }`}>
                               {subtopic.name}
                             </span>
                             {subtopic.description && (
@@ -111,18 +119,21 @@ const MainTopicList = ({
                         <div className="flex items-center gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                           {/* Progress Badge */}
                           <div className="flex items-center gap-1.5">
-                            {progress.total > 0 && progress.percent === 100 && (
-                              <FiCheck className="w-3.5 h-3.5 text-green-400" />
+                            {subtopic.isCompleted ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/25 text-green-300 border border-green-500/20">
+                                Completed
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                progress.total === 0 
+                                  ? 'bg-slate-800 text-slate-500'
+                                  : progress.percent === 100
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
+                              }`}>
+                                {progress.total === 0 ? '0 milestones' : `${progress.percent}%`}
+                              </span>
                             )}
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              progress.total === 0 
-                                ? 'bg-slate-800 text-slate-500'
-                                : progress.percent === 100
-                                  ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                  : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
-                            }`}>
-                              {progress.total === 0 ? '0 tasks' : `${progress.percent}%`}
-                            </span>
                           </div>
 
                           {/* Delete Subtopic Icon */}

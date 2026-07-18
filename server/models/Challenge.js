@@ -63,7 +63,22 @@ const challengeSchema = new mongoose.Schema({
       type: String,
       maxlength: 150,
       default: ''
-    }
+    },
+    isCompleted: {
+      type: Boolean,
+      default: false
+    },
+    milestones: [{
+      text: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      isCompleted: {
+        type: Boolean,
+        default: false
+      }
+    }]
   }]
 }, {
   timestamps: true
