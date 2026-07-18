@@ -286,4 +286,99 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/challenges/:id/subtopics
+// @desc    Add a subtopic to a challenge
+// @access  Private
+router.post('/:id/subtopics', protect, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) return res.status(404).json({ message: 'Challenge not found' });
+    if (challenge.user.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Not authorized' });
+
+    const { name, category, description } = req.body;
+    if (!name || !category) return res.status(400).json({ message: 'Name and category are required' });
+
+    if (!challenge.subtopics) challenge.subtopics = [];
+    
+    // Check duplicate
+    const exists = challenge.subtopics.some(
+      s => s.name.toLowerCase() === name.trim().toLowerCase() && s.category === category
+    );
+    if (exists) return res.status(400).json({ message: 'Subtopic already exists in this subject' });
+
+    challenge.subtopics.push({ name: name.trim(), category, description: description || '' });
+    await challenge.save();
+
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/challenges/:id/subtopics/:subtopicId
+// @desc    Update a subtopic (name/description)
+// @access  Private
+router.put('/:id/subtopics/:subtopicId', protect, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) return res.status(404).json({ message: 'Challenge not found' });
+    if (challenge.user.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Not authorized' });
+
+    const { name, description } = req.body;
+    const subtopic = challenge.subtopics.id(req.params.subtopicId);
+    if (!subtopic) return res.status(404).json({ message: 'Subtopic not found' });
+
+    const oldName = subtopic.name;
+    const category = subtopic.category;
+
+    if (name) {
+      subtopic.name = name.trim();
+    }
+    if (description !== undefined) {
+      subtopic.description = description;
+    }
+
+    await challenge.save();
+
+    // If name changed, update tasks
+    if (name && oldName !== name.trim()) {
+      await Task.updateMany(
+        { challenge: req.params.id, category, subtopic: oldName },
+        { subtopic: name.trim() }
+      );
+    }
+
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/challenges/:id/subtopics/:subtopicId
+// @desc    Delete a subtopic and its tasks
+// @access  Private
+router.delete('/:id/subtopics/:subtopicId', protect, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) return res.status(404).json({ message: 'Challenge not found' });
+    if (challenge.user.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Not authorized' });
+
+    const subtopic = challenge.subtopics.id(req.params.subtopicId);
+    if (!subtopic) return res.status(404).json({ message: 'Subtopic not found' });
+
+    const name = subtopic.name;
+    const category = subtopic.category;
+
+    challenge.subtopics = challenge.subtopics.filter(s => s._id.toString() !== req.params.subtopicId);
+    await challenge.save();
+
+    // Delete tasks belonging to this subtopic
+    await Task.deleteMany({ challenge: req.params.id, category, subtopic: name });
+
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

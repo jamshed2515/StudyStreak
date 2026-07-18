@@ -3,25 +3,18 @@ import { FiX, FiPlus } from 'react-icons/fi';
 
 const AddSubtopicModal = ({ category, onClose, onAdd }) => {
   const [subtopicName, setSubtopicName] = useState('');
-  const [taskTitle, setTaskTitle] = useState('');
-  const [priority, setPriority] = useState('Medium');
-  const [estimatedMinutes, setEstimatedMinutes] = useState(60);
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const priorities = ['Low', 'Medium', 'High'];
-  const timePresets = [15, 30, 45, 60, 90, 120];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!subtopicName.trim()) return;
+
     setLoading(true);
-    
     await onAdd({
-      title: taskTitle,
+      name: subtopicName.trim(),
       category,
-      subtopic: subtopicName,
-      priority,
-      estimatedMinutes,
-      date: new Date()
+      description: description.trim()
     });
     setLoading(false);
   };
@@ -50,94 +43,48 @@ const AddSubtopicModal = ({ category, onClose, onAdd }) => {
           {/* Subtopic Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Subtopic / Chapter Name
+              Subtopic Name
             </label>
             <input
               type="text"
               value={subtopicName}
               onChange={(e) => setSubtopicName(e.target.value)}
               className="input-field"
-              placeholder="e.g., Mechanics, Organic Chemistry, Calculus"
+              placeholder="e.g., Arrays, Organic Chemistry, Calculus"
               required
+              maxLength={50}
               autoFocus
             />
           </div>
 
-          {/* First Task */}
+          {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              First Task Title
-            </label>
-            <input
-              type="text"
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              className="input-field"
-              placeholder="e.g., Complete Chapter 1"
-              required
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-slate-300">
+                Description (Optional)
+              </label>
+              <span className="text-xs text-slate-500">{description.length}/150</span>
+            </div>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input-field resize-none"
+              placeholder="e.g., Learn basic array operations, sliding window and two pointers"
+              rows={3}
+              maxLength={150}
             />
-          </div>
-
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Priority
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {priorities.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPriority(p)}
-                  className={`p-2 rounded-lg text-sm font-medium transition-colors ${
-                    priority === p
-                      ? p === 'High' 
-                        ? 'bg-red-500 text-white' 
-                        : p === 'Medium' 
-                          ? 'bg-yellow-500 text-white' 
-                          : 'bg-green-500 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Time */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Estimated Time
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {timePresets.map((time) => (
-                <button
-                  key={time}
-                  type="button"
-                  onClick={() => setEstimatedMinutes(time)}
-                  className={`p-2 rounded-lg text-xs font-medium transition-colors ${
-                    estimatedMinutes === time
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  }`}
-                >
-                  {time}m
-                </button>
-              ))}
-            </div>
           </div>
 
           <button
             type="submit"
-            disabled={loading || !subtopicName || !taskTitle}
+            disabled={loading || !subtopicName.trim()}
             className="w-full btn-primary py-3 flex items-center justify-center gap-2"
           >
             {loading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
             ) : (
               <>
-                <FiPlus /> Add Subtopic & Task
+                <FiPlus /> Create Subtopic
               </>
             )}
           </button>

@@ -7,8 +7,9 @@ import {
   FiPlus, FiCheck, FiTrash2, FiCalendar, FiTarget, 
   FiTrendingUp, FiClock, FiZap, FiAward, FiChevronDown, FiList, FiFilter
 } from 'react-icons/fi';
-import TaskList from '../components/TaskList';
-import AllTasksList from '../components/AllTasksList';
+import AddSubtopicModal from '../components/AddSubtopicModal';
+import SubtopicDetails from '../components/SubtopicDetails';
+import MainTopicList from '../components/MainTopicList';
 import ChallengeCard from '../components/ChallengeCard';
 import CreateChallengeModal from '../components/CreateChallengeModal';
 import AddTaskModal from '../components/AddTaskModal';
@@ -26,8 +27,8 @@ const Dashboard = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showChallengeSelector, setShowChallengeSelector] = useState(false);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [taskView, setTaskView] = useState('today'); // 'today' or 'all'
-  const [taskFilter, setTaskFilter] = useState('all'); // 'all', 'completed', 'pending'
+  const [selectedSubtopic, setSelectedSubtopic] = useState(null);
+  const [showAddSubtopic, setShowAddSubtopic] = useState({ open: false, category: '' });
 
   // Fetch data
   useEffect(() => {
@@ -124,8 +125,55 @@ const Dashboard = () => {
       setChallenges(prev => prev.map(c => 
         c._id === response.data._id ? response.data : c
       ));
+      if (selectedSubtopic) {
+        const updatedSub = response.data.subtopics.find(s => s._id === selectedSubtopic._id);
+        if (updatedSub) {
+          setSelectedSubtopic(updatedSub);
+        } else {
+          setSelectedSubtopic(null);
+        }
+      }
     } catch (error) {
       console.error('Error refreshing challenge:', error);
+    }
+  };
+
+  const handleCreateSubtopic = async (subtopicData) => {
+    try {
+      const response = await api.post(`/challenges/${selectedChallenge._id}/subtopics`, subtopicData);
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
+      setShowAddSubtopic({ open: false, category: '' });
+      toast.success('Subtopic created!');
+      
+      // Auto-redirect to the new subtopic details page
+      const newSub = response.data.subtopics.find(
+        s => s.name === subtopicData.name && s.category === subtopicData.category
+      );
+      if (newSub) {
+        setSelectedSubtopic(newSub);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create subtopic');
+    }
+  };
+
+  const handleDeleteSubtopic = async (subtopicId) => {
+    try {
+      const response = await api.delete(`/challenges/${selectedChallenge._id}/subtopics/${subtopicId}`);
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
+      toast.success('Subtopic deleted');
+      if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+        setSelectedSubtopic(null);
+      }
+      fetchTasks();
+    } catch (error) {
+      toast.error('Failed to delete subtopic');
     }
   };
 
@@ -150,6 +198,8 @@ const Dashboard = () => {
       setShowAddTask(false);
       toast.success('Task added!');
       fetchTasks();
+      fetchStats();
+      refreshSelectedChallenge();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to add task');
     }
@@ -193,6 +243,8 @@ const Dashboard = () => {
     try {
       await api.delete(`/tasks/${taskId}`);
       fetchTasks();
+      fetchStats();
+      refreshSelectedChallenge();
     } catch (error) {
       toast.error('Failed to delete task');
     }
@@ -202,17 +254,12 @@ const Dashboard = () => {
     try {
       await api.put(`/tasks/${taskId}`, updates);
       fetchTasks();
+      fetchStats();
+      refreshSelectedChallenge();
     } catch (error) {
       toast.error('Failed to update task');
     }
   };
-
-  // Filter all tasks based on filter selection
-  const filteredAllTasks = allTasks.filter(task => {
-    if (taskFilter === 'completed') return task.isCompleted;
-    if (taskFilter === 'pending') return !task.isCompleted;
-    return true;
-  });
 
   const handleSelectChallenge = (challenge) => {
     setSelectedChallenge(challenge);
@@ -428,126 +475,40 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Tasks Section */}
+          {/* Main Content Sections: Subtopic Details OR Main Topic Grid */}
           {selectedChallenge && (
-            <div className="card">
-              {/* Tab Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  {/* View Toggle Tabs */}
-                  <div className="flex bg-slate-700/50 rounded-lg p-1">
-                    <button
-                      onClick={() => setTaskView('today')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        taskView === 'today'
-                          ? 'bg-primary-600 text-white'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Today
-                    </button>
-                    <button
-                      onClick={() => setTaskView('all')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                        taskView === 'all'
-                          ? 'bg-primary-600 text-white'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <FiList className="w-4 h-4" />
-                      All Tasks
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {/* Filter (only for All Tasks view) */}
-                  {taskView === 'all' && (
-                    <div className="flex items-center gap-2">
-                      <FiFilter className="w-4 h-4 text-slate-400" />
-                      <select
-                        value={taskFilter}
-                        onChange={(e) => setTaskFilter(e.target.value)}
-                        className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary-500"
-                      >
-                        <option value="all">All Status</option>
-                        <option value="completed">Completed</option>
-                        <option value="pending">Pending</option>
-                      </select>
-                    </div>
-                  )}
-
+            selectedSubtopic ? (
+              <SubtopicDetails
+                subtopic={selectedSubtopic}
+                tasks={allTasks}
+                onBack={() => setSelectedSubtopic(null)}
+                onAddTask={handleAddTask}
+                onToggleTask={handleToggleTask}
+                onDeleteTask={handleDeleteTask}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-white">Subjects & Subtopics</h2>
                   <button
                     onClick={() => setShowAddTask(true)}
                     className="btn-primary flex items-center gap-2"
                   >
-                    <FiPlus /> Add Task
+                    <FiPlus /> Add Subject
                   </button>
                 </div>
+                
+                <MainTopicList
+                  categories={selectedChallenge?.categories || []}
+                  subtopics={selectedChallenge?.subtopics || []}
+                  tasks={allTasks}
+                  onSelectSubtopic={(sub) => setSelectedSubtopic(sub)}
+                  onOpenAddSubtopicModal={(category) => setShowAddSubtopic({ open: true, category })}
+                  onDeleteSubtopic={handleDeleteSubtopic}
+                  onDeleteCategory={handleDeleteCategory}
+                />
               </div>
-
-              {/* Task View Header Info */}
-              {taskView === 'today' ? (
-                <>
-                  <div className="mb-4">
-                    <p className="text-sm text-slate-400">
-                      {format(new Date(), 'EEEE, MMMM d, yyyy')}
-                    </p>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-slate-400">{completedToday} of {totalToday} tasks</span>
-                      <span className="text-primary-400 font-medium">{completionPercent}%</span>
-                    </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-500"
-                        style={{ width: `${completionPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <TaskList 
-                    tasks={todaysTasks} 
-                    categories={selectedChallenge?.categories || []}
-                    onToggle={handleToggleTask}
-                    onDelete={handleDeleteTask}
-                    onAddTask={handleAddTask}
-                    onUpdateTask={handleUpdateTask}
-                    onDeleteCategory={handleDeleteCategory}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm text-slate-400">
-                      Showing {filteredAllTasks.length} task{filteredAllTasks.length !== 1 ? 's' : ''} 
-                      {taskFilter !== 'all' && ` (${taskFilter})`}
-                    </p>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-green-400">
-                        {allTasks.filter(t => t.isCompleted).length} completed
-                      </span>
-                      <span className="text-yellow-400">
-                        {allTasks.filter(t => !t.isCompleted).length} pending
-                      </span>
-                    </div>
-                  </div>
-
-                  <AllTasksList 
-                    tasks={filteredAllTasks} 
-                    categories={selectedChallenge?.categories || []}
-                    onToggle={handleToggleTask}
-                    onDelete={handleDeleteTask}
-                    onAddTask={handleAddTask}
-                    onUpdateTask={handleUpdateTask}
-                    onDeleteCategory={handleDeleteCategory}
-                  />
-                </>
-              )}
-            </div>
+            )
           )}
         </div>
 
@@ -576,6 +537,14 @@ const Dashboard = () => {
           onClose={() => setShowAddTask(false)}
           onAdd={handleAddTask}
           onAddMainTopic={handleAddMainTopic}
+        />
+      )}
+
+      {showAddSubtopic.open && (
+        <AddSubtopicModal
+          category={showAddSubtopic.category}
+          onClose={() => setShowAddSubtopic({ open: false, category: '' })}
+          onAdd={handleCreateSubtopic}
         />
       )}
     </div>

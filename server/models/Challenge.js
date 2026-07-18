@@ -47,7 +47,24 @@ const challengeSchema = new mongoose.Schema({
   categories: {
     type: [String],
     default: []
-  }
+  },
+  subtopics: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    category: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      maxlength: 150,
+      default: ''
+    }
+  }]
 }, {
   timestamps: true
 });
