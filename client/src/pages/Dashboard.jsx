@@ -255,7 +255,8 @@ const Dashboard = () => {
       if (!prevChallenge) return prevChallenge;
       const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
         if (sub._id === subtopicId) {
-          const updatedMilestones = sub.milestones.map((m) => {
+          const milestones = sub.milestones || [];
+          const updatedMilestones = milestones.map((m) => {
             if (m._id === milestoneId) {
               return { ...m, isCompleted };
             }
@@ -272,7 +273,8 @@ const Dashboard = () => {
     if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
       setSelectedSubtopic((prevSub) => {
         if (!prevSub) return prevSub;
-        const updatedMilestones = prevSub.milestones.map((m) => {
+        const milestones = prevSub.milestones || [];
+        const updatedMilestones = milestones.map((m) => {
           if (m._id === milestoneId) {
             return { ...m, isCompleted };
           }
@@ -307,7 +309,8 @@ const Dashboard = () => {
       if (!prevChallenge) return prevChallenge;
       const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
         if (sub._id === subtopicId) {
-          const updated = sub.milestones.map(m => m._id === milestoneId ? { ...m, text } : m);
+          const milestones = sub.milestones || [];
+          const updated = milestones.map(m => m._id === milestoneId ? { ...m, text } : m);
           return { ...sub, milestones: updated };
         }
         return sub;
@@ -318,7 +321,8 @@ const Dashboard = () => {
     if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
       setSelectedSubtopic((prevSub) => {
         if (!prevSub) return prevSub;
-        const updated = prevSub.milestones.map(m => m._id === milestoneId ? { ...m, text } : m);
+        const milestones = prevSub.milestones || [];
+        const updated = milestones.map(m => m._id === milestoneId ? { ...m, text } : m);
         return { ...prevSub, milestones: updated };
       });
     }
@@ -347,7 +351,8 @@ const Dashboard = () => {
       if (!prevChallenge) return prevChallenge;
       const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
         if (sub._id === subtopicId) {
-          const filtered = sub.milestones.filter(m => m._id !== milestoneId);
+          const milestones = sub.milestones || [];
+          const filtered = milestones.filter(m => m._id !== milestoneId);
           return { ...sub, milestones: filtered };
         }
         return sub;
@@ -358,7 +363,8 @@ const Dashboard = () => {
     if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
       setSelectedSubtopic((prevSub) => {
         if (!prevSub) return prevSub;
-        const filtered = prevSub.milestones.filter(m => m._id !== milestoneId);
+        const milestones = prevSub.milestones || [];
+        const filtered = milestones.filter(m => m._id !== milestoneId);
         return { ...prevSub, milestones: filtered };
       });
     }
