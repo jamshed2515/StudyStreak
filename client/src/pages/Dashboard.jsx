@@ -443,6 +443,25 @@ const Dashboard = () => {
     }
   };
 
+  const handleResetMilestones = async (subtopicId) => {
+    try {
+      const response = await api.put(`/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/reset-milestones`);
+      setSelectedChallenge(response.data);
+      setChallenges(prev => prev.map(c => 
+        c._id === response.data._id ? response.data : c
+      ));
+      
+      const updatedSub = response.data.subtopics.find(s => s._id === subtopicId);
+      if (updatedSub) {
+        setSelectedSubtopic(updatedSub);
+      }
+      fetchStats();
+      toast.success('Milestones template loaded!');
+    } catch (error) {
+      toast.error('Failed to load milestones template');
+    }
+  };
+
   const handleSelectChallenge = (challenge) => {
     setSelectedChallenge(challenge);
     setShowChallengeSelector(false);
@@ -664,6 +683,7 @@ const Dashboard = () => {
                 onDeleteMilestone={handleDeleteMilestone}
                 onEditMilestone={handleEditMilestone}
                 onCompleteSubtopic={handleCompleteSubtopic}
+                onResetMilestones={handleResetMilestones}
               />
             ) : (
               <div className="space-y-6">

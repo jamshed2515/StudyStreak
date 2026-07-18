@@ -590,4 +590,81 @@ router.put('/:id/subtopics/:subtopicId/complete', protect, async (req, res) => {
   }
 });
 
+// @route   PUT /api/challenges/:id/subtopics/:subtopicId/reset-milestones
+// @desc    Reset subtopic milestones to default template
+// @access  Private
+router.put('/:id/subtopics/:subtopicId/reset-milestones', protect, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) return res.status(404).json({ message: 'Challenge not found' });
+    if (challenge.user.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Not authorized' });
+
+    const subtopic = challenge.subtopics.id(req.params.subtopicId);
+    if (!subtopic) return res.status(404).json({ message: 'Subtopic not found' });
+
+    const defaultMilestonesMap = {
+      arrays: [
+        'Array Basics',
+        'Traversal',
+        'Searching',
+        'Prefix Sum',
+        'Two Pointers',
+        'Sliding Window',
+        'Kadane\'s Algorithm',
+        'Binary Search on Arrays',
+        'Practice Problems',
+        'Revision'
+      ],
+      'number system': [
+        'Divisibility Rules',
+        'HCF & LCM',
+        'Prime Numbers',
+        'Factors & Multiples',
+        'Remainders',
+        'Cyclicity of Numbers',
+        'Unit Digit',
+        'Base Conversion',
+        'Practice Questions',
+        'Revision'
+      ],
+      strings: [
+        'String Basics',
+        'Character Arrays',
+        'Frequency Counting',
+        'Hashing',
+        'Pattern Matching',
+        'Practice Interview Problems',
+        'Revision'
+      ]
+    };
+
+    const genericMilestones = [
+      'Basic Concepts & Operations',
+      'Standard Implementations',
+      'Key Patterns & Techniques',
+      'Practice Interview Problems',
+      'Revision & Mock Tests'
+    ];
+
+    const searchKey = subtopic.name.trim().toLowerCase();
+    let milestoneTexts = genericMilestones;
+    
+    if (searchKey.includes('array')) {
+      milestoneTexts = defaultMilestonesMap.arrays;
+    } else if (searchKey.includes('number system')) {
+      milestoneTexts = defaultMilestonesMap['number system'];
+    } else if (searchKey.includes('string')) {
+      milestoneTexts = defaultMilestonesMap.strings;
+    }
+
+    subtopic.milestones = milestoneTexts.map(text => ({ text, isCompleted: false }));
+    subtopic.isCompleted = false;
+
+    await challenge.save();
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

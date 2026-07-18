@@ -8,7 +8,8 @@ const SubtopicDetails = ({
   onToggleMilestone,
   onDeleteMilestone,
   onEditMilestone,
-  onCompleteSubtopic
+  onCompleteSubtopic,
+  onResetMilestones
 }) => {
   const [newMilestoneText, setNewMilestoneText] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -107,14 +108,26 @@ const SubtopicDetails = ({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-white">Learning Milestones</h2>
-            {!showAddForm && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowAddForm(true)}
-                className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1"
+                onClick={() => {
+                  if (window.confirm('Do you want to reset this subtopic to the default milestone roadmap? This will overwrite existing milestones.')) {
+                    onResetMilestones(subtopic._id);
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-colors font-semibold border border-slate-650"
               >
-                <FiPlus className="w-4 h-4" /> Add Milestone
+                Load Template
               </button>
-            )}
+              {!showAddForm && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1"
+                >
+                  <FiPlus className="w-4 h-4" /> Add Milestone
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Quick Milestone Add Form */}
@@ -147,14 +160,24 @@ const SubtopicDetails = ({
 
           {/* Checklist Items */}
           {milestones.length === 0 ? (
-            <div className="text-center py-12 bg-slate-900/20 rounded-2xl border border-dashed border-slate-700/50">
-              <p className="text-slate-500 text-sm">No milestones created yet. Add standard learning steps!</p>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="text-primary-400 hover:text-primary-300 text-sm font-medium mt-3 inline-flex items-center gap-1"
-              >
-                <FiPlus className="w-4 h-4" /> Add milestone
-              </button>
+            <div className="text-center py-12 bg-slate-900/20 rounded-2xl border border-dashed border-slate-700/50 space-y-4">
+              <p className="text-slate-500 text-sm font-medium">No milestones created yet. Add standard roadmap steps!</p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="text-primary-400 hover:text-primary-300 text-sm font-medium inline-flex items-center gap-1"
+                >
+                  <FiPlus className="w-4 h-4" /> Add Custom
+                </button>
+                <span className="text-slate-700">|</span>
+                <button
+                  type="button"
+                  onClick={() => onResetMilestones(subtopic._id)}
+                  className="text-green-400 hover:text-green-300 text-sm font-medium"
+                >
+                  Load Default Template
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
