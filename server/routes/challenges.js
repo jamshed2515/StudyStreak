@@ -308,13 +308,28 @@ router.post('/:id/subtopics', protect, async (req, res) => {
 
     const defaultMilestonesMap = {
       arrays: [
-        'Basic Array Operations',
-        'Traversal & Searching',
+        'Array Basics',
+        'Traversal',
+        'Searching',
         'Prefix Sum',
         'Two Pointers',
         'Sliding Window',
-        'Practice Interview Problems',
-        'Revision & Mock Problems'
+        'Kadane\'s Algorithm',
+        'Binary Search on Arrays',
+        'Practice Problems',
+        'Revision'
+      ],
+      'number system': [
+        'Divisibility Rules',
+        'HCF & LCM',
+        'Prime Numbers',
+        'Factors & Multiples',
+        'Remainders',
+        'Cyclicity of Numbers',
+        'Unit Digit',
+        'Base Conversion',
+        'Practice Questions',
+        'Revision'
       ],
       strings: [
         'String Basics',
@@ -336,7 +351,16 @@ router.post('/:id/subtopics', protect, async (req, res) => {
     ];
 
     const searchKey = name.trim().toLowerCase();
-    const milestoneTexts = defaultMilestonesMap[searchKey] || genericMilestones;
+    let milestoneTexts = genericMilestones;
+    
+    if (searchKey.includes('array')) {
+      milestoneTexts = defaultMilestonesMap.arrays;
+    } else if (searchKey.includes('number system')) {
+      milestoneTexts = defaultMilestonesMap['number system'];
+    } else if (searchKey.includes('string')) {
+      milestoneTexts = defaultMilestonesMap.strings;
+    }
+
     const milestones = milestoneTexts.map(text => ({ text, isCompleted: false }));
 
     challenge.subtopics.push({ 
