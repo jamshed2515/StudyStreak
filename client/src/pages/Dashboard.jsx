@@ -137,6 +137,18 @@ const Dashboard = () => {
   };
 
   const handleDeleteSubtopic = async (subtopicId) => {
+    const originalChallenge = selectedChallenge;
+
+    setSelectedChallenge((prevChallenge) => {
+      if (!prevChallenge) return prevChallenge;
+      const filtered = prevChallenge.subtopics.filter(s => s._id !== subtopicId);
+      return { ...prevChallenge, subtopics: filtered };
+    });
+
+    if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+      setSelectedSubtopic(null);
+    }
+
     try {
       const response = await api.delete(`/challenges/${selectedChallenge._id}/subtopics/${subtopicId}`);
       setSelectedChallenge(response.data);
@@ -144,10 +156,12 @@ const Dashboard = () => {
         c._id === response.data._id ? response.data : c
       ));
       toast.success('Subtopic deleted');
-      if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
-        setSelectedSubtopic(null);
-      }
     } catch (error) {
+      setSelectedChallenge(originalChallenge);
+      if (selectedSubtopic === null) {
+        const found = originalChallenge.subtopics.find(s => s._id === subtopicId);
+        if (found) setSelectedSubtopic(found);
+      }
       toast.error('Failed to delete subtopic');
     }
   };
@@ -186,19 +200,88 @@ const Dashboard = () => {
   };
 
   const handleAddMilestone = async (subtopicId, text) => {
+    const originalChallenge = selectedChallenge;
+    const tempId = `temp-${Date.now()}`;
+    const newMilestone = { _id: tempId, text, isCompleted: false };
+
+    // Update local challenge
+    setSelectedChallenge((prevChallenge) => {
+      if (!prevChallenge) return prevChallenge;
+      const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
+        if (sub._id === subtopicId) {
+          return { ...sub, milestones: [...(sub.milestones || []), newMilestone] };
+        }
+        return sub;
+      });
+      return { ...prevChallenge, subtopics: updatedSubtopics };
+    });
+
+    // Update local selectedSubtopic
+    if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+      setSelectedSubtopic((prevSub) => {
+        if (!prevSub) return prevSub;
+        return { ...prevSub, milestones: [...(prevSub.milestones || []), newMilestone] };
+      });
+    }
+
     try {
       const response = await api.post(`/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones`, { text });
       setSelectedChallenge(response.data);
       setChallenges(prev => prev.map(c => 
         c._id === response.data._id ? response.data : c
       ));
+      
+      const updatedSub = response.data.subtopics.find(s => s._id === subtopicId);
+      if (updatedSub) {
+        setSelectedSubtopic(updatedSub);
+      }
       fetchStats();
     } catch (error) {
+      setSelectedChallenge(originalChallenge);
+      if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+        const found = originalChallenge.subtopics.find(s => s._id === subtopicId);
+        if (found) setSelectedSubtopic(found);
+      }
       toast.error('Failed to add milestone');
     }
   };
 
   const handleToggleMilestone = async (subtopicId, milestoneId, isCompleted) => {
+    const originalChallenge = selectedChallenge;
+    const originalSelectedSubtopic = selectedSubtopic;
+
+    // Update local challenge
+    setSelectedChallenge((prevChallenge) => {
+      if (!prevChallenge) return prevChallenge;
+      const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
+        if (sub._id === subtopicId) {
+          const updatedMilestones = sub.milestones.map((m) => {
+            if (m._id === milestoneId) {
+              return { ...m, isCompleted };
+            }
+            return m;
+          });
+          return { ...sub, milestones: updatedMilestones };
+        }
+        return sub;
+      });
+      return { ...prevChallenge, subtopics: updatedSubtopics };
+    });
+
+    // Update local selectedSubtopic
+    if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+      setSelectedSubtopic((prevSub) => {
+        if (!prevSub) return prevSub;
+        const updatedMilestones = prevSub.milestones.map((m) => {
+          if (m._id === milestoneId) {
+            return { ...m, isCompleted };
+          }
+          return m;
+        });
+        return { ...prevSub, milestones: updatedMilestones };
+      });
+    }
+
     try {
       const response = await api.put(
         `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones/${milestoneId}`,
@@ -210,11 +293,36 @@ const Dashboard = () => {
       ));
       fetchStats();
     } catch (error) {
+      setSelectedChallenge(originalChallenge);
+      setSelectedSubtopic(originalSelectedSubtopic);
       toast.error('Failed to update milestone');
     }
   };
 
   const handleEditMilestone = async (subtopicId, milestoneId, text) => {
+    const originalChallenge = selectedChallenge;
+    const originalSelectedSubtopic = selectedSubtopic;
+
+    setSelectedChallenge((prevChallenge) => {
+      if (!prevChallenge) return prevChallenge;
+      const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
+        if (sub._id === subtopicId) {
+          const updated = sub.milestones.map(m => m._id === milestoneId ? { ...m, text } : m);
+          return { ...sub, milestones: updated };
+        }
+        return sub;
+      });
+      return { ...prevChallenge, subtopics: updatedSubtopics };
+    });
+
+    if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+      setSelectedSubtopic((prevSub) => {
+        if (!prevSub) return prevSub;
+        const updated = prevSub.milestones.map(m => m._id === milestoneId ? { ...m, text } : m);
+        return { ...prevSub, milestones: updated };
+      });
+    }
+
     try {
       const response = await api.put(
         `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones/${milestoneId}`,
@@ -225,11 +333,36 @@ const Dashboard = () => {
         c._id === response.data._id ? response.data : c
       ));
     } catch (error) {
+      setSelectedChallenge(originalChallenge);
+      setSelectedSubtopic(originalSelectedSubtopic);
       toast.error('Failed to edit milestone');
     }
   };
 
   const handleDeleteMilestone = async (subtopicId, milestoneId) => {
+    const originalChallenge = selectedChallenge;
+    const originalSelectedSubtopic = selectedSubtopic;
+
+    setSelectedChallenge((prevChallenge) => {
+      if (!prevChallenge) return prevChallenge;
+      const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
+        if (sub._id === subtopicId) {
+          const filtered = sub.milestones.filter(m => m._id !== milestoneId);
+          return { ...sub, milestones: filtered };
+        }
+        return sub;
+      });
+      return { ...prevChallenge, subtopics: updatedSubtopics };
+    });
+
+    if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+      setSelectedSubtopic((prevSub) => {
+        if (!prevSub) return prevSub;
+        const filtered = prevSub.milestones.filter(m => m._id !== milestoneId);
+        return { ...prevSub, milestones: filtered };
+      });
+    }
+
     try {
       const response = await api.delete(
         `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/milestones/${milestoneId}`
@@ -240,11 +373,51 @@ const Dashboard = () => {
       ));
       fetchStats();
     } catch (error) {
+      setSelectedChallenge(originalChallenge);
+      setSelectedSubtopic(originalSelectedSubtopic);
       toast.error('Failed to delete milestone');
     }
   };
 
   const handleCompleteSubtopic = async (subtopicId, isCompleted) => {
+    const originalChallenge = selectedChallenge;
+    const originalSelectedSubtopic = selectedSubtopic;
+
+    // Update local challenge optimistically
+    setSelectedChallenge((prevChallenge) => {
+      if (!prevChallenge) return prevChallenge;
+      const updatedSubtopics = prevChallenge.subtopics.map((sub) => {
+        if (sub._id === subtopicId) {
+          const milestones = sub.milestones || [];
+          const updatedMilestones = isCompleted ? milestones.map(m => ({ ...m, isCompleted: true })) : milestones;
+          return { ...sub, isCompleted, milestones: updatedMilestones };
+        }
+        return sub;
+      });
+      return { ...prevChallenge, subtopics: updatedSubtopics };
+    });
+
+    // Update local selected subtopic optimistically
+    if (selectedSubtopic && selectedSubtopic._id === subtopicId) {
+      setSelectedSubtopic((prevSub) => {
+        if (!prevSub) return prevSub;
+        const milestones = prevSub.milestones || [];
+        const updatedMilestones = isCompleted ? milestones.map(m => ({ ...m, isCompleted: true })) : milestones;
+        return { ...prevSub, isCompleted, milestones: updatedMilestones };
+      });
+    }
+
+    // Auto-redirect to the next incomplete subtopic in state immediately
+    if (isCompleted) {
+      const nextIncomplete = selectedChallenge.subtopics.find(s => s._id !== subtopicId && !s.isCompleted);
+      if (nextIncomplete) {
+        setSelectedSubtopic(nextIncomplete);
+      } else {
+        setSelectedSubtopic(null); // Return to dashboard
+        toast.success('Congratulations! You completed all topics in this challenge! 🎉');
+      }
+    }
+
     try {
       const response = await api.put(
         `/challenges/${selectedChallenge._id}/subtopics/${subtopicId}/complete`,
@@ -256,18 +429,10 @@ const Dashboard = () => {
       ));
       fetchStats();
       toast.success(isCompleted ? 'Topic marked complete!' : 'Topic marked incomplete');
-
-      // Auto-redirect to the next incomplete subtopic
-      if (isCompleted) {
-        const nextIncomplete = response.data.subtopics.find(s => !s.isCompleted);
-        if (nextIncomplete) {
-          setSelectedSubtopic(nextIncomplete);
-        } else {
-          setSelectedSubtopic(null); // Return to dashboard if all completed
-          toast.success('Congratulations! You completed all topics in this challenge! 🎉');
-        }
-      }
     } catch (error) {
+      // Revert states
+      setSelectedChallenge(originalChallenge);
+      setSelectedSubtopic(originalSelectedSubtopic);
       toast.error('Failed to update topic status');
     }
   };
